@@ -96,7 +96,6 @@ function generateIndexHtml(apiVersions, releaseFiles) {
     <div class="container">
         <div class="header">
             <h1>GCode Viewer Core</h1>
-            <p>PureScript library for GCode visualization and processing</p>
         </div>
         
         <div class="content">

@@ -18,6 +18,7 @@ gen:
     npx typedoc "output/*/index.d.ts" --out docs/api/{{VERSION}} --readme none --tsconfig tsconfig.typedoc.json
     node scripts/generate-exports.mjs
     npm pack --pack-destination docs/releases
+    node scripts/mk-index-pages.mjs
 
 publish:
     git tag v{{VERSION}}
