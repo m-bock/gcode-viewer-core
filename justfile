@@ -1,14 +1,18 @@
+
+VERSION := `node -p "require('./package.json').version"`
+
 gen:
+    rm -rf docs
+    mkdir -p docs/releases
+    mkdir -p docs/api
     rm -rf output/*/index.d.ts
     npx spago run
     node scripts/fix-inline-imports.mjs
     npx prettier --write --ignore-path "" 'output/*/index.d.ts'
-    npx typedoc "output/*/index.d.ts" --out docs --readme none --tsconfig tsconfig.typedoc.json
+    npx typedoc "output/*/index.d.ts" --out docs/api/{{VERSION}} --readme none --tsconfig tsconfig.typedoc.json
     node scripts/generate-exports.mjs
+    npm pack --pack-destination docs/releases
 
 
-publish:
-    #!/usr/bin/env bash
-    source .env
-    npm config set //npm.pkg.github.com/:_authToken=$GITHUB_TOKEN
-    npm publish --access public --registry=https://npm.pkg.github.com/
+publish: gen
+    npx gh-pages -d docs --add

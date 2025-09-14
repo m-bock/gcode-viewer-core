@@ -5,21 +5,12 @@
         "path": "./",
         "core": {
           "dependencies": [
-            "console",
-            "effect",
-            "prelude"
-          ],
-          "build_plan": [
-            "console",
-            "effect",
-            "prelude"
-          ]
-        },
-        "test": {
-          "dependencies": [
             "affjax-web",
             "codec-argonaut",
+            "console",
+            "effect",
             "heterogeneous",
+            "prelude",
             "profunctor-lenses",
             "record",
             "routing",
@@ -126,6 +117,10 @@
             "web-storage",
             "web-xhr"
           ]
+        },
+        "test": {
+          "dependencies": [],
+          "build_plan": []
         }
       }
     },
@@ -696,7 +691,7 @@
         "ref": "6ea4465c4a782ffa3f9e3902d5f79be13a010bd0"
       },
       "ts-bridge": {
-        "path": "../../../purescript-ts-bridge"
+        "path": "../purescript-ts-bridge"
       }
     }
   },
@@ -1795,7 +1790,7 @@
     },
     "ts-bridge": {
       "type": "local",
-      "path": "../../../purescript-ts-bridge",
+      "path": "../purescript-ts-bridge",
       "dependencies": [
         "aff",
         "aff-promise",

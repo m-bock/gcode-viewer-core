@@ -4,25 +4,25 @@ package:
     - console
     - effect
     - prelude
+    - ts-bridge
+    - codec-argonaut
+    - affjax-web
+    - profunctor-lenses
+    - record
+    - heterogeneous
+    - stadium
+    - routing-duplex
+    - routing
   test:
     main: Test.Main
-    dependencies:
-      - ts-bridge
-      - codec-argonaut
-      - affjax-web
-      - profunctor-lenses
-      - record
-      - heterogeneous
-      - stadium
-      - routing-duplex
-      - routing
+    dependencies: []
 
 workspace:
   packageSet:
     registry: 66.4.0
   extraPackages:
     ts-bridge:
-      path: ../../../purescript-ts-bridge
+      path: ../purescript-ts-bridge
     codec-argonaut:
       git: https://github.com/garyb/purescript-codec-argonaut
       ref: master
