@@ -5,8 +5,6 @@ import path from "path";
 import { execSync } from "child_process";
 
 const docsDir = "docs";
-const apiDir = path.join(docsDir, "api");
-const releasesDir = path.join(docsDir, "releases");
 
 // Ensure docs directory exists
 if (!fs.existsSync(docsDir)) {
@@ -30,59 +28,12 @@ function getGitTags() {
   }
 }
 
-// Get existing API versions
-function getApiVersions() {
-  if (!fs.existsSync(apiDir)) {
-    return [];
-  }
-  return fs
-    .readdirSync(apiDir, { withFileTypes: true })
-    .filter((dirent) => dirent.isDirectory())
-    .map((dirent) => dirent.name)
-    .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
-}
-
-// Get existing release files
-function getReleaseFiles() {
-  if (!fs.existsSync(releasesDir)) {
-    return [];
-  }
-  return fs
-    .readdirSync(releasesDir)
-    .filter((file) => file.endsWith(".tgz"))
-    .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
-}
-
 // Generate HTML content
-function generateIndexHtml(apiVersions, releaseFiles) {
+function generateIndexHtml(gitTags) {
   const currentDate = new Date().toISOString().split("T")[0];
 
-  // Create a map of versions with their available resources
-  const versionMap = new Map();
-
-  // Add API versions
-  apiVersions.forEach((version) => {
-    if (!versionMap.has(version)) {
-      versionMap.set(version, {});
-    }
-    versionMap.get(version).hasApi = true;
-  });
-
-  // Add release versions
-  releaseFiles.forEach((file) => {
-    const version =
-      file.match(/gcode-viewer-core-(.+?)\.tgz/)?.[1] || "unknown";
-    if (!versionMap.has(version)) {
-      versionMap.set(version, {});
-    }
-    versionMap.get(version).hasRelease = true;
-    versionMap.get(version).releaseFile = file;
-  });
-
-  // Sort versions (newest first)
-  const sortedVersions = Array.from(versionMap.entries()).sort(([a], [b]) =>
-    b.localeCompare(a, undefined, { numeric: true })
-  );
+  // Use git tags as the source of truth, already sorted newest first
+  const sortedVersions = gitTags;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -104,22 +55,14 @@ function generateIndexHtml(apiVersions, releaseFiles) {
                   sortedVersions.length > 0
                     ? sortedVersions
                         .map(
-                          ([version, resources]) => `
+                          (version) => `
                             <div class="version-item">
                                 <div class="version-info">
                                     <div class="version-badge">v${version}</div>
                                 </div>
                                 <div class="version-links">
-                                    ${
-                                      resources.hasApi
-                                        ? `<a href="api/${version}/index.html">📚 API Docs</a>`
-                                        : `<a class="disabled">📚 API Docs</a>`
-                                    }
-                                    ${
-                                      resources.hasRelease
-                                        ? `<a href="releases/${resources.releaseFile}" download>📦 Download</a>`
-                                        : `<a class="disabled">📦 Download</a>`
-                                    }
+                                    <a href="api/${version}/index.html">📚 API Docs</a>
+                                    <a href="releases/m-bock-gcode-viewer-core-${version}.tgz" download>📦 Download</a>
                                 </div>
                             </div>
                         `
@@ -142,19 +85,13 @@ function generateIndexHtml(apiVersions, releaseFiles) {
 
 // Main execution
 function main() {
-  console.log("🔍 Scanning for versions...");
+  console.log("🔍 Scanning for git tags...");
 
   const gitTags = getGitTags();
-  const apiVersions = getApiVersions();
-  const releaseFiles = getReleaseFiles();
 
-  console.log(`📚 Found ${apiVersions.length} API versions:`, apiVersions);
-  console.log(
-    `📦 Found ${releaseFiles.length} release files:`,
-    releaseFiles.map((f) => f.replace(".tgz", ""))
-  );
+  console.log(`📚 Found ${gitTags.length} git tags:`, gitTags);
 
-  const htmlContent = generateIndexHtml(apiVersions, releaseFiles);
+  const htmlContent = generateIndexHtml(gitTags);
   const indexPath = path.join(docsDir, "index.html");
 
   // Copy CSS file to docs directory
