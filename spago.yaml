@@ -1,0 +1,39 @@
+package:
+  name: purs
+  dependencies:
+    - console
+    - effect
+    - prelude
+  test:
+    main: Test.Main
+    dependencies:
+      - ts-bridge
+      - codec-argonaut
+      - affjax-web
+      - profunctor-lenses
+      - record
+      - heterogeneous
+      - stadium
+      - routing-duplex
+      - routing
+
+workspace:
+  packageSet:
+    registry: 66.4.0
+  extraPackages:
+    ts-bridge:
+      path: ../../../purescript-ts-bridge
+    codec-argonaut:
+      git: https://github.com/garyb/purescript-codec-argonaut
+      ref: master
+      dependencies:
+        - argonaut-core
+        - codec
+        - variant
+        - ordered-collections
+        - type-equality
+        - foreign-object
+
+    stadium:
+      git: https://github.com/m-bock/purescript-stadium
+      ref: 6ea4465c4a782ffa3f9e3902d5f79be13a010bd0

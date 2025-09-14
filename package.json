@@ -1,0 +1,71 @@
+{
+  "name": "@m-bock/gcode-viewer-core",
+  "version": "0.0.2",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
+  "exports": {
+    "./react-utils": {
+      "import": "./output/Stadium.React/foreign.js",
+      "default": "./output/Stadium.React/foreign.js"
+    },
+    "./Data/Int": {
+      "types": "./output/Data.Int/index.d.ts",
+      "import": "./output/Data.Int/index.js",
+      "default": "./output/Data.Int/index.js"
+    },
+    "./Data/Maybe": {
+      "types": "./output/Data.Maybe/index.d.ts",
+      "import": "./output/Data.Maybe/index.js",
+      "default": "./output/Data.Maybe/index.js"
+    },
+    "./GCodeViewer/RemoteData": {
+      "types": "./output/GCodeViewer.RemoteData/index.d.ts",
+      "import": "./output/GCodeViewer.RemoteData/index.js",
+      "default": "./output/GCodeViewer.RemoteData/index.js"
+    },
+    "./GCodeViewer/StateMachines/App": {
+      "types": "./output/GCodeViewer.StateMachines.App/index.d.ts",
+      "import": "./output/GCodeViewer.StateMachines.App/index.js",
+      "default": "./output/GCodeViewer.StateMachines.App/index.js"
+    },
+    "./GCodeViewer/StateMachines/Viewer": {
+      "types": "./output/GCodeViewer.StateMachines.Viewer/index.d.ts",
+      "import": "./output/GCodeViewer.StateMachines.Viewer/index.js",
+      "default": "./output/GCodeViewer.StateMachines.Viewer/index.js"
+    },
+    "./TypeAliases": {
+      "types": "./output/TypeAliases/index.d.ts",
+      "import": "./output/TypeAliases/index.js",
+      "default": "./output/TypeAliases/index.js"
+    }
+  },
+  "files": [
+    "output/*/index.js",
+    "output/*/index.d.ts",
+    "package.json",
+    "docs",
+    "README.md"
+  ],
+  "scripts": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "purescript": "^0.15.15",
+    "purs-tidy": "^0.11.0",
+    "react": "^19.1.1",
+    "spago": "^0.93.44",
+    "typedoc": "^0.28.12"
+  },
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/m-bock/gcode-viewer-core.git"
+  }
+}
