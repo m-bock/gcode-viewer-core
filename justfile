@@ -22,6 +22,7 @@ gen:
 publish:
     git tag v{{VERSION}}
     git push origin v{{VERSION}}
+    git push
     npx gh-pages -d docs --add
 
 run-publish: check-git-clean clean gen publish
