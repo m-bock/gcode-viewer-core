@@ -1,6 +1,6 @@
 {
   "name": "@m-bock/gcode-viewer-core",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "private": false,
   "main": "index.js",
   "directories": {
@@ -48,6 +48,7 @@
   "files": [
     "output/*/index.js",
     "output/*/index.d.ts",
+    "output/*/foreign.js",
     "package.json",
     "docs",
     "README.md"
