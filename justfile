@@ -1,6 +1,12 @@
 
 VERSION := `node -p "require('./package.json').version"`
 
+clean:
+    rm -rf output
+
+check-clean:
+    git diff-index --quiet HEAD -- || { echo "❌ Git tree is not clean!"; exit 1; }
+
 gen:
     rm -rf docs
     mkdir -p docs/releases
@@ -13,9 +19,10 @@ gen:
     node scripts/generate-exports.mjs
     npm pack --pack-destination docs/releases
 
-
-publish: gen
+publish:
     git diff-index --quiet HEAD --
     git tag v{{VERSION}}
     git push origin v{{VERSION}}
     npx gh-pages -d docs --add
+
+run-publish: clean gen publish
