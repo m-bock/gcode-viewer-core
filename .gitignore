@@ -10,6 +10,7 @@ generated-docs/
 .purs*
 .psa*
 .spago
-docs/
+/docs
 .npmrc
 .env
+/.vscode
