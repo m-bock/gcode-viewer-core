@@ -1,0 +1,118 @@
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  margin: 0;
+  padding: 20px;
+  background-color: #fff;
+  color: #333;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.header {
+  background: #f8f9fa;
+  color: #333;
+  padding: 30px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 2em;
+  font-weight: 600;
+}
+
+.header p {
+  margin: 10px 0 0 0;
+  color: #666;
+  font-size: 1em;
+}
+
+.content {
+  padding: 30px;
+}
+
+.version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.version-item {
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.version-item:hover {
+  background: #e9ecef;
+}
+
+.version-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.version-badge {
+  display: inline-block;
+  background: #333;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+.version-links {
+  display: flex;
+  gap: 10px;
+}
+
+.version-links a {
+  text-decoration: none;
+  color: #0066cc;
+  font-weight: 500;
+  padding: 6px 12px;
+  border: 1px solid #0066cc;
+  border-radius: 6px;
+}
+
+.version-links a:hover {
+  background: #0066cc;
+  color: white;
+}
+
+.version-links a.disabled {
+  color: #999;
+  border-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.empty-state {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 30px;
+}
+
+.footer {
+  background: #f8f9fa;
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  border-top: 1px solid #ddd;
+  font-size: 0.9em;
+}
