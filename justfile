@@ -15,4 +15,7 @@ gen:
 
 
 publish: gen
+    git diff-index --quiet HEAD --
+    git tag v{{VERSION}}
+    git push origin v{{VERSION}}
     npx gh-pages -d docs --add
