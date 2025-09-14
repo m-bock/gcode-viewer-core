@@ -20,10 +20,12 @@ gen:
     npm pack --pack-destination docs/releases
     node scripts/mk-index-pages.mjs
 
-publish:
+git-tag:
     git tag v{{VERSION}}
     git push origin v{{VERSION}}
+
+publish:
     git push
     npx gh-pages -d docs --add
 
-run-publish: check-git-clean clean gen publish
+run-publish: check-git-clean clean git-tag gen publish
