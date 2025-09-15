@@ -18,6 +18,8 @@ import GCodeViewer.Error (Err, handleAffEither, handleEither, mkErr)
 import GCodeViewer.Error as Err
 import Named (NamedRecord, carNamedObject)
 
+type ModuleName = "GCodeViewer.Api"
+
 -------------------------------------------------------------------------------
 
 type IndexFile =
@@ -28,7 +30,7 @@ codecIndexFile = CA.array codecIndexFileItem
 
 -------------------------------------------------------------------------------
 
-type IndexFileItem = NamedRecord "IndexFileItem"
+type IndexFileItem = NamedRecord ModuleName "IndexFileItem"
   ( name :: String
   , gcode :: String
   , pictures :: Array String
@@ -45,7 +47,7 @@ getIndexFile :: { url :: String } -> ExceptT Err Aff IndexFile
 getIndexFile { url } = do
   ret <- handleAffEither (mkErr Err.Err1 <<< Affjax.printError) $ AffjaxWeb.get json url
 
-  when (ret.status /= StatusCode 200) $ throwError (mkErr Err.Err3 "Failed to get index file")
+  when (ret.status /= StatusCode 200) $ throwError (mkErr Err.Err3 $ show ret.status)
 
   val <- handleEither (mkErr Err.Err2 <<< CA.printJsonDecodeError) $ CA.decode codecIndexFile ret.body
 
@@ -55,8 +57,8 @@ getIndexFile { url } = do
 
 getGCodeFile :: String -> ExceptT Err Aff String
 getGCodeFile url = do
-  ret <- handleAffEither (mkErr Err.Err4 <<< Affjax.printError) $ AffjaxWeb.get string ("/out/" <> url)
+  ret <- handleAffEither (mkErr Err.Err4 <<< Affjax.printError) $ AffjaxWeb.get string url
 
-  when (ret.status /= StatusCode 200) $ throwError (mkErr Err.Err5 "Failed to get gcode file")
+  when (ret.status /= StatusCode 200) $ throwError (mkErr Err.Err5 $ show ret.status)
 
   pure ret.body

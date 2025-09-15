@@ -1,15 +1,20 @@
 module GCodeViewer.StateMachines.App
   ( PubState
+  , ModuleName
   , Msg(..)
   , Dispatchers
   , tsApi
   , tsExports
   , useStateMachineApp
+  , mkMsg
+  , getQueryParams
   ) where
 
 import GCodeViewer.Prelude
 
 import Control.Monad.Error.Class (catchError, try)
+import Control.Monad.Writer (Writer, runWriter)
+import Control.Monad.Writer.Class (tell)
 import DTS as DTS
 import Data.Argonaut.Core (Json)
 import Data.Codec (encode)
@@ -17,7 +22,11 @@ import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Record as CAR
 import Data.Lens (set)
+import Data.Lens.Iso.Newtype (unto)
 import Data.Newtype (class Newtype)
+import Data.Symbol (reflectSymbol)
+import Data.Tuple (Tuple(..))
+import Data.Tuple.Nested ((/\))
 import Effect.Class.Console (logShow)
 import Effect.Uncurried (EffectFn1, mkEffectFn1)
 import GCodeViewer.Api (IndexFile, codecIndexFile)
@@ -25,21 +34,23 @@ import GCodeViewer.Api as Api
 import GCodeViewer.Error (Err, printErr)
 import GCodeViewer.RemoteData (RemoteData(..), codecRemoteData)
 import GCodeViewer.TsBridge (class TsBridge, Tok(..))
-import Routing.Duplex (RouteDuplex, RouteDuplex', (:=))
+import Named (NamedRecord(..), carNamedObject)
+import Routing.Duplex (class RouteDuplexParams, RouteDuplex, RouteDuplex', (:=))
 import Routing.Duplex as RD
 import Routing.Duplex as RoutingDuplex
+import Routing.Duplex.Parser (RouteError)
 import Stadium.Core (DispatcherApi, TsApi, mkTsApi)
 import Stadium.React (useStateMachine)
 import Stadium.TL (mkConstructors)
 import TsBridge as TSB
 import Type.Prelude (Proxy(..))
 
-type PubState =
-  { index :: RemoteData IndexFile
-  }
+type PubState = NamedRecord ModuleName "PubState"
+  ( index :: RemoteData IndexFile
+  )
 
 initPubState :: PubState
-initPubState =
+initPubState = NamedRecord
   { index: NotAsked
   }
 
@@ -49,7 +60,7 @@ derive instance Generic Msg _
 
 updatePubState :: Msg -> PubState -> Except String PubState
 updatePubState msg pubState = case msg of
-  MsgSetIndex r -> pubState # set (prop @"index") r # pure
+  MsgSetIndex r -> pubState # set (unto NamedRecord <<< prop @"index") r # pure
 
 encodeMsg :: Msg -> { tag :: String, args :: Json }
 encodeMsg = case _ of
@@ -58,27 +69,31 @@ encodeMsg = case _ of
     , args: CA.encode (codecRemoteData codecIndexFile) r
     }
 
-type Dispatchers =
-  { msg :: EffectFn1 Msg Unit
+type Dispatchers = NamedRecord ModuleName "Dispatchers"
+  ( msg :: EffectFn1 Msg Unit
   , runFetchIndex :: EffectFn1 { url :: String } Unit
-  }
+  )
+
+getQueryParams :: Effect Query
+getQueryParams = do
+  searchParams <- getSearchParams
+  let (query /\ errors) = parseQuery searchParams
+  pure query
 
 dispatchers :: DispatcherApi Msg PubState {} -> Dispatchers
 dispatchers { emitMsg, emitMsgCtx, readPubState } =
-  { msg: mkEffectFn1 emitMsg
-  , runFetchIndex: run fetchIndex
-  }
+  NamedRecord
+    { msg: mkEffectFn1 emitMsg
+    , runFetchIndex: run fetchIndex
+    }
   where
   fetchIndex :: { url :: String } -> ExceptT Err Aff Unit
   fetchIndex { url } = do
-    st <- liftEffect $ readPubState
+    NamedRecord st <- liftEffect $ readPubState
     if st.index == Loading then do
       pure unit
     else
       ( do
-          let r = RD.parse rdQuery "?url=ffo&debug=true"
-
-          logShow r
 
           liftEffect $ emitMsg $ MsgSetIndex Loading
           index <- Api.getIndexFile { url }
@@ -110,7 +125,7 @@ useStateMachineApp :: Effect { state :: PubState, dispatch :: Dispatchers }
 useStateMachineApp = useStateMachine tsApi
 
 codecPubState :: JsonCodec PubState
-codecPubState = CAR.object "PubState"
+codecPubState = carNamedObject
   { index: codecRemoteData codecIndexFile
   }
 
@@ -119,27 +134,42 @@ instance TsBridge Msg where
 
 -----
 
+type ModuleName = "GCodeViewer.StateMachines.App"
+
 moduleName :: String
-moduleName = "GCodeViewer.StateMachines.App"
+moduleName = reflectSymbol (Proxy :: _ ModuleName)
+
+mkMsg :: _
+mkMsg = mkConstructors @Msg
 
 tsExports :: Either TSB.AppError (Array DTS.TsModuleFile)
 tsExports = TSB.tsModuleFile moduleName
   [ TSB.tsValues Tok
       { useStateMachineApp
-      , mkMsg: mkConstructors @Msg
+      , mkMsg
+      , getQueryParams
       }
   ]
 
 --
 
-type Query =
-  { url :: String
-  , debug :: Boolean
-  }
+type Query = NamedRecord ModuleName "Query"
+  ( url :: String
+  )
 
-rdQuery :: RouteDuplex' Query
-rdQuery =
-  RD.params
-    { url: RD.string
-    , debug: RD.boolean
-    }
+parseQuery :: String -> Tuple Query (Array RouteError)
+parseQuery s = runWriter do
+  { url } <- parse { url: "/index.json" } { url: RD.string } s
+
+  pure $ NamedRecord { url }
+
+  where
+
+  parse :: forall r1 r2. RouteDuplexParams r1 r2 => Record r2 -> Record r1 -> String -> Writer (Array RouteError) (Record r2)
+  parse def r str = case RD.parse (RD.params r) str of
+    Left err -> do
+      tell [ err ]
+      pure def
+    Right a -> pure a
+
+foreign import getSearchParams :: Effect String

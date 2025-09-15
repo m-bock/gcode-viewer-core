@@ -24,6 +24,11 @@
       "import": "./output/Data.Maybe/index.js",
       "default": "./output/Data.Maybe/index.js"
     },
+    "./GCodeViewer/Api": {
+      "types": "./output/GCodeViewer.Api/index.d.ts",
+      "import": "./output/GCodeViewer.Api/index.js",
+      "default": "./output/GCodeViewer.Api/index.js"
+    },
     "./GCodeViewer/RemoteData": {
       "types": "./output/GCodeViewer.RemoteData/index.d.ts",
       "import": "./output/GCodeViewer.RemoteData/index.js",
@@ -38,11 +43,6 @@
       "types": "./output/GCodeViewer.StateMachines.Viewer/index.d.ts",
       "import": "./output/GCodeViewer.StateMachines.Viewer/index.js",
       "default": "./output/GCodeViewer.StateMachines.Viewer/index.js"
-    },
-    "./TypeAliases": {
-      "types": "./output/TypeAliases/index.d.ts",
-      "import": "./output/TypeAliases/index.js",
-      "default": "./output/TypeAliases/index.js"
     }
   },
   "files": [
