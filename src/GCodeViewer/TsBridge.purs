@@ -5,10 +5,10 @@ import Prelude
 import DTS as DTS
 import Data.Function.Uncurried (Fn2, Fn3, Fn4)
 import Data.Maybe (Maybe)
-import Data.Symbol (class IsSymbol, reflectSymbol)
+import Data.Symbol (class IsSymbol)
 import Effect (Effect)
 import Effect.Uncurried (EffectFn1)
-import Named (NamedRecord)
+import Named (Named)
 import TsBridge as TSB
 import Type.Data.Symbol (reflectSymbol)
 import Type.Prelude (Proxy(..))
@@ -61,7 +61,7 @@ instance (TsBridge a, TsBridge b, TsBridge c, TsBridge d, TsBridge e) => TsBridg
 instance (TSB.TsBridgeRecord Tok r) => TsBridge (Record r) where
   tsBridge = TSB.tsBridgeRecord Tok
 
-instance (TSB.TsBridgeRecord Tok r, IsSymbol typeName, IsSymbol moduleName) => TsBridge (NamedRecord moduleName typeName r) where
+instance (TSB.TsBridgeRecord Tok r, IsSymbol typeName, IsSymbol moduleName) => TsBridge (Named moduleName typeName (Record r)) where
   tsBridge = TSB.tsBridgeNewtype0 Tok
     { moduleName: reflectSymbol (Proxy :: _ moduleName)
     , typeName: reflectSymbol (Proxy :: _ typeName)

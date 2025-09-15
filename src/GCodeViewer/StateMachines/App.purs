@@ -12,7 +12,7 @@ module GCodeViewer.StateMachines.App
 
 import GCodeViewer.Prelude
 
-import Control.Monad.Error.Class (catchError, try)
+import Control.Monad.Error.Class (catchError)
 import Control.Monad.Writer (Writer, runWriter)
 import Control.Monad.Writer.Class (tell)
 import DTS as DTS
@@ -20,24 +20,20 @@ import Data.Argonaut.Core (Json)
 import Data.Codec (encode)
 import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
-import Data.Codec.Argonaut.Record as CAR
 import Data.Lens (set)
 import Data.Lens.Iso.Newtype (unto)
-import Data.Newtype (class Newtype)
 import Data.Symbol (reflectSymbol)
-import Data.Tuple (Tuple(..))
+import Data.Tuple (Tuple)
 import Data.Tuple.Nested ((/\))
-import Effect.Class.Console (logShow)
 import Effect.Uncurried (EffectFn1, mkEffectFn1)
 import GCodeViewer.Api (IndexFile, codecIndexFile)
 import GCodeViewer.Api as Api
 import GCodeViewer.Error (Err, printErr)
 import GCodeViewer.RemoteData (RemoteData(..), codecRemoteData)
 import GCodeViewer.TsBridge (class TsBridge, Tok(..))
-import Named (NamedRecord(..), carNamedObject)
-import Routing.Duplex (class RouteDuplexParams, RouteDuplex, RouteDuplex', (:=))
+import Named (Named(..), carNamedObject)
+import Routing.Duplex (class RouteDuplexParams)
 import Routing.Duplex as RD
-import Routing.Duplex as RoutingDuplex
 import Routing.Duplex.Parser (RouteError)
 import Stadium.Core (DispatcherApi, TsApi, mkTsApi)
 import Stadium.React (useStateMachine)
@@ -45,12 +41,12 @@ import Stadium.TL (mkConstructors)
 import TsBridge as TSB
 import Type.Prelude (Proxy(..))
 
-type PubState = NamedRecord ModuleName "PubState"
-  ( index :: RemoteData IndexFile
-  )
+type PubState = Named ModuleName "PubState"
+  { index :: RemoteData IndexFile
+  }
 
 initPubState :: PubState
-initPubState = NamedRecord
+initPubState = Named
   { index: NotAsked
   }
 
@@ -60,7 +56,7 @@ derive instance Generic Msg _
 
 updatePubState :: Msg -> PubState -> Except String PubState
 updatePubState msg pubState = case msg of
-  MsgSetIndex r -> pubState # set (unto NamedRecord <<< prop @"index") r # pure
+  MsgSetIndex r -> pubState # set (unto Named <<< prop @"index") r # pure
 
 encodeMsg :: Msg -> { tag :: String, args :: Json }
 encodeMsg = case _ of
@@ -69,10 +65,10 @@ encodeMsg = case _ of
     , args: CA.encode (codecRemoteData codecIndexFile) r
     }
 
-type Dispatchers = NamedRecord ModuleName "Dispatchers"
-  ( msg :: EffectFn1 Msg Unit
+type Dispatchers = Named ModuleName "Dispatchers"
+  { msg :: EffectFn1 Msg Unit
   , runFetchIndex :: EffectFn1 { url :: String } Unit
-  )
+  }
 
 getQueryParams :: Effect Query
 getQueryParams = do
@@ -82,14 +78,14 @@ getQueryParams = do
 
 dispatchers :: DispatcherApi Msg PubState {} -> Dispatchers
 dispatchers { emitMsg, emitMsgCtx, readPubState } =
-  NamedRecord
+  Named
     { msg: mkEffectFn1 emitMsg
     , runFetchIndex: run fetchIndex
     }
   where
   fetchIndex :: { url :: String } -> ExceptT Err Aff Unit
   fetchIndex { url } = do
-    NamedRecord st <- liftEffect $ readPubState
+    Named st <- liftEffect $ readPubState
     if st.index == Loading then do
       pure unit
     else
@@ -153,15 +149,15 @@ tsExports = TSB.tsModuleFile moduleName
 
 --
 
-type Query = NamedRecord ModuleName "Query"
-  ( url :: String
-  )
+type Query = Named ModuleName "Query"
+  { url :: String
+  }
 
 parseQuery :: String -> Tuple Query (Array RouteError)
 parseQuery s = runWriter do
-  { url } <- parse { url: "/index.json" } { url: RD.string } s
+  { url } <- parse { url: "index.json" } { url: RD.string } s
 
-  pure $ NamedRecord { url }
+  pure $ Named { url }
 
   where
 

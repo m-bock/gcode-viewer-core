@@ -10,13 +10,10 @@ import Control.Monad.Error.Class (throwError)
 import Control.Monad.Except (ExceptT)
 import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
-import Data.Codec.Argonaut.Record as CAR
-import Data.Newtype (class Newtype, unwrap, wrap)
-import Data.Profunctor (dimap)
 import Effect.Aff (Aff)
 import GCodeViewer.Error (Err, handleAffEither, handleEither, mkErr)
 import GCodeViewer.Error as Err
-import Named (NamedRecord, carNamedObject)
+import Named (Named, carNamedObject)
 
 type ModuleName = "GCodeViewer.Api"
 
@@ -30,11 +27,11 @@ codecIndexFile = CA.array codecIndexFileItem
 
 -------------------------------------------------------------------------------
 
-type IndexFileItem = NamedRecord ModuleName "IndexFileItem"
-  ( name :: String
+type IndexFileItem = Named ModuleName "IndexFileItem"
+  { name :: String
   , gcode :: String
   , pictures :: Array String
-  )
+  }
 
 codecIndexFileItem :: JsonCodec IndexFileItem
 codecIndexFileItem = carNamedObject
