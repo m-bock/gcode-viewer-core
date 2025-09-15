@@ -1,5 +1,6 @@
 module GCodeViewer.StateMachines.Viewer
   ( Dispatchers
+  , ModuleName
   , Msg
   , PubState
   , tsApi
@@ -15,28 +16,31 @@ import Data.Argonaut.Core (Json)
 import Data.Codec (encode)
 import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
-import Data.Codec.Argonaut.Record as CAR
 import Data.Lens (set)
+import Data.Lens.Iso.Newtype (unto)
 import Data.Newtype (class Newtype)
 import Data.String as Str
 import Effect.Uncurried (EffectFn1, mkEffectFn1)
 import GCodeViewer.Api as Api
 import GCodeViewer.Error (Err, mkErr, printErr)
 import GCodeViewer.Error as Err
-import Stadium.Core (DispatcherApi, TsApi, mkTsApi)
-import Stadium.React (useStateMachine)
 import GCodeViewer.RemoteData (RemoteData(..), codecRemoteData)
 import GCodeViewer.TsBridge (class TsBridge, Tok(..))
+import Named (Named(..), carNamedObject)
+import Stadium.Core (DispatcherApi, TsApi, mkTsApi)
+import Stadium.React (useStateMachine)
 import TsBridge as TSB
 
-type PubState =
+type ModuleName = "GCodeViewer.StateMachines.Viewer"
+
+type PubState = Named ModuleName "PubState"
   { gcodeLines :: RemoteData (Array String)
   , startLayer :: Int
   , endLayer :: Int
   }
 
 initPubState :: PubState
-initPubState =
+initPubState = Named
   { gcodeLines: NotAsked
   , startLayer: 0
   , endLayer: 0
@@ -50,15 +54,15 @@ data Msg
 updatePubState :: Msg -> PubState -> Except String PubState
 updatePubState msg pubState = case msg of
   MsgSetStartLayer startLayer -> pubState
-    # set (prop @"startLayer") startLayer
+    # set (unto Named <<< prop @"startLayer") startLayer
     # pure
 
   MsgSetEndLayer endLayer -> pubState
-    # set (prop @"endLayer") endLayer
+    # set (unto Named <<< prop @"endLayer") endLayer
     # pure
 
   MsgSetGcodeLines value -> pubState
-    # set (prop @"gcodeLines") value
+    # set (unto Named <<< prop @"gcodeLines") value
     # pure
 
 encodeMsg :: Msg -> { tag :: String, args :: Json }
@@ -95,7 +99,7 @@ dispatchers { emitMsg, emitMsgCtx, readPubState } =
       emitMsg' = liftEffect <<< emitMsgCtx "loadGcodeLines"
     in
       ( do
-          st <- liftEffect $ readPubState
+          Named st <- liftEffect $ readPubState
 
           when (st.gcodeLines == Loading) $ do
             throwError (mkErr Err.Err6 "Gcode lines are already loading")
@@ -137,7 +141,7 @@ tsApi = mkTsApi
   }
 
 codecPubState :: JsonCodec PubState
-codecPubState = CAR.object "PubState"
+codecPubState = carNamedObject
   { gcodeLines: codecRemoteData (CA.array CA.string)
   , startLayer: CA.int
   , endLayer: CA.int
