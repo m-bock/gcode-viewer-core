@@ -14,6 +14,10 @@
       "import": "./output/Stadium.React/foreign.js",
       "default": "./output/Stadium.React/foreign.js"
     },
+    "./package.json": {
+      "import": "./package.json",
+      "default": "./package.json"
+    },
     "./Data/Int": {
       "types": "./output/Data.Int/index.d.ts",
       "import": "./output/Data.Int/index.js",
