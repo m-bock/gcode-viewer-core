@@ -103,7 +103,7 @@ function updatePackageJson(newExports) {
   if (packageJson.exports) {
     for (const [key, value] of Object.entries(packageJson.exports)) {
       // Keep exports that start with "./" followed by lowercase letters
-      if (key.match(/^\.\/[a-z][a-z0-9-]*$/)) {
+      if (key.match(/^\.\/[a-z][a-z0-9-.]*$/)) {
         preservedExports[key] = value;
         console.log(`📝 Preserving lowercase export: ${key}`);
       }
