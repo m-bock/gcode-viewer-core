@@ -39,11 +39,16 @@ type PubState = Named ModuleName "PubState"
   , endLayer :: Int
   }
 
-initPubState :: PubState
-initPubState = Named
+type StateInit = Named ModuleName "StateInit"
+  { startLayer :: Int
+  , endLayer :: Int
+  }
+
+initPubState :: StateInit -> PubState
+initPubState (Named { startLayer, endLayer }) = Named
   { gcodeLines: NotAsked
-  , startLayer: 0
-  , endLayer: 0
+  , startLayer
+  , endLayer
   }
 
 data Msg
@@ -129,11 +134,11 @@ dispatchers { emitMsg, emitMsgCtx, readPubState } =
       Left err -> log (printErr err)
       Right _ -> pure unit
 
-tsApi :: TsApi Msg PubState {} Dispatchers
-tsApi = mkTsApi
+tsApi :: StateInit -> TsApi Msg PubState {} Dispatchers
+tsApi init = mkTsApi
   { updatePubState: \msg s -> runExcept (updatePubState msg s)
   , dispatchers
-  , initPubState
+  , initPubState: initPubState init
   , initPrivState: {}
   , printError: identity
   , encodeJsonPubState: encode codecPubState
@@ -169,8 +174,8 @@ instance TsBridge Msg where
 moduleName :: String
 moduleName = "GCodeViewer.StateMachines.Viewer"
 
-useViewer :: Effect { state :: PubState, dispatch :: Dispatchers }
-useViewer = useStateMachine tsApi
+useViewer :: EffectFn1 StateInit { state :: PubState, dispatch :: Dispatchers }
+useViewer = mkEffectFn1 \init -> useStateMachine (tsApi init)
 
 tsExports :: Either TSB.AppError (Array DTS.TsModuleFile)
 tsExports = TSB.tsModuleFile moduleName
