@@ -1,13 +1,14 @@
 module GCodeViewer.StateMachines.App
-  ( PubState
+  ( Dispatchers
   , ModuleName
   , Msg(..)
-  , Dispatchers
+  , PubState
+  , getQueryParams
+  , mkMsg
+  , mkUrl
   , tsApi
   , tsExports
   , useStateMachineApp
-  , mkMsg
-  , getQueryParams
   ) where
 
 import GCodeViewer.Prelude
@@ -20,8 +21,10 @@ import Data.Argonaut.Core (Json)
 import Data.Codec (encode)
 import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
+import Data.Codec.Argonaut.Record as CAR
 import Data.Lens (set)
 import Data.Lens.Iso.Newtype (unto)
+import Data.String as Str
 import Data.Symbol (reflectSymbol)
 import Data.Tuple (Tuple)
 import Data.Tuple.Nested ((/\))
@@ -42,7 +45,7 @@ import TsBridge as TSB
 import Type.Prelude (Proxy(..))
 
 type PubState = Named ModuleName "PubState"
-  { index :: RemoteData IndexFile
+  { index :: RemoteData { url :: String, content :: IndexFile }
   }
 
 initPubState :: PubState
@@ -50,7 +53,16 @@ initPubState = Named
   { index: NotAsked
   }
 
-data Msg = MsgSetIndex (RemoteData IndexFile)
+mkUrl :: { absUrl :: String, relUrl :: String } -> String
+mkUrl { absUrl, relUrl } = removeLastSegment absUrl <> "/" <> relUrl
+
+removeLastSegment :: String -> String
+removeLastSegment url =
+  case Str.lastIndexOf (Str.Pattern "/") url of
+    Just i -> Str.take i url
+    Nothing -> url
+
+data Msg = MsgSetIndex (RemoteData { url :: String, content :: IndexFile })
 
 derive instance Generic Msg _
 
@@ -62,7 +74,7 @@ encodeMsg :: Msg -> { tag :: String, args :: Json }
 encodeMsg = case _ of
   MsgSetIndex r ->
     { tag: "MsgSetIndex"
-    , args: CA.encode (codecRemoteData codecIndexFile) r
+    , args: CA.encode (codecRemoteData (CAR.object "" { url: CA.string, content: codecIndexFile })) r
     }
 
 type Dispatchers = Named ModuleName "Dispatchers"
@@ -93,7 +105,7 @@ dispatchers { emitMsg, emitMsgCtx, readPubState } =
 
           liftEffect $ emitMsg $ MsgSetIndex Loading
           index <- Api.getIndexFile { url }
-          liftEffect $ emitMsg $ MsgSetIndex (Loaded index)
+          liftEffect $ emitMsg $ MsgSetIndex (Loaded { url, content: index })
       ) `catchError`
         ( \e -> do
             liftEffect $ emitMsg $ MsgSetIndex (Error (printErr e))
@@ -122,7 +134,7 @@ useStateMachineApp = useStateMachine tsApi
 
 codecPubState :: JsonCodec PubState
 codecPubState = carNamedObject
-  { index: codecRemoteData codecIndexFile
+  { index: codecRemoteData (CAR.object "" { url: CA.string, content: codecIndexFile })
   }
 
 instance TsBridge Msg where
@@ -144,6 +156,7 @@ tsExports = TSB.tsModuleFile moduleName
       { useStateMachineApp
       , mkMsg
       , getQueryParams
+      , mkUrl
       }
   ]
 
