@@ -30,14 +30,10 @@ patch-package-json:
 generate-doc-page:
     node scripts/mk-index-pages.mjs
 
-git-tag:
-    git tag v{{VERSION}}
-    git push origin v{{VERSION}}
-
 publish:
     git push
     npx gh-pages -d docs --add
 
-run-publish: check-git-clean clean git-tag gen-types check-exports patch-package-json gen-type-docs pack-release generate-doc-page publish
+run-publish: check-git-clean clean gen-types check-exports patch-package-json gen-type-docs pack-release generate-doc-page publish
 
 run-dev: gen-types check-exports patch-package-json
