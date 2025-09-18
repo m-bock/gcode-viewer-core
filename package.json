@@ -1,6 +1,6 @@
 {
   "name": "@m-bock/gcode-viewer-core",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "private": false,
   "main": "index.js",
   "directories": {
