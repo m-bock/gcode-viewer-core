@@ -1,11 +1,12 @@
 module GCodeViewer.StateMachines.Viewer
   ( Dispatchers
   , ModuleName
-  , Msg
+  , Msg(..)
   , PubState
   , tsApi
   , tsExports
-  , useViewer
+  , useStateMachineViewer
+  , mkMsg
   ) where
 
 import GCodeViewer.Prelude
@@ -29,32 +30,36 @@ import GCodeViewer.TsBridge (class TsBridge, Tok(..))
 import Named (Named(..), carNamedObject)
 import Stadium.Core (DispatcherApi, TsApi, mkTsApi)
 import Stadium.React (useStateMachine)
+import Stadium.TL (mkConstructors, mkMatcher)
 import TsBridge as TSB
 
 type ModuleName = "GCodeViewer.StateMachines.Viewer"
 
 type PubState = Named ModuleName "PubState"
   { gcodeLines :: RemoteData (Array String)
+  , minLayer :: Int
+  , maxLayer :: Int
   , startLayer :: Int
   , endLayer :: Int
   }
 
-type StateInit = Named ModuleName "StateInit"
-  { startLayer :: Int
-  , endLayer :: Int
-  }
-
-initPubState :: StateInit -> PubState
-initPubState (Named { startLayer, endLayer }) = Named
+initPubState :: PubState
+initPubState = Named
   { gcodeLines: NotAsked
-  , startLayer
-  , endLayer
+  , startLayer: 0
+  , endLayer: 100
+  , minLayer: 0
+  , maxLayer: 100
   }
 
 data Msg
   = MsgSetStartLayer Int
   | MsgSetEndLayer Int
   | MsgSetGcodeLines (RemoteData (Array String))
+  | MsgSetMinLayer Int
+  | MsgSetMaxLayer Int
+
+derive instance Generic Msg _
 
 updatePubState :: Msg -> PubState -> Except String PubState
 updatePubState msg pubState = case msg of
@@ -68,6 +73,14 @@ updatePubState msg pubState = case msg of
 
   MsgSetGcodeLines value -> pubState
     # set (unto Named <<< prop @"gcodeLines") value
+    # pure
+
+  MsgSetMinLayer minLayer -> pubState
+    # set (unto Named <<< prop @"minLayer") minLayer
+    # pure
+
+  MsgSetMaxLayer maxLayer -> pubState
+    # set (unto Named <<< prop @"maxLayer") maxLayer
     # pure
 
 encodeMsg :: Msg -> { tag :: String, args :: Json }
@@ -84,17 +97,27 @@ encodeMsg = case _ of
     { tag: "MsgSetGcodeLines"
     , args: CA.encode (codecRemoteData (CA.array CA.string)) r
     }
+  MsgSetMinLayer r ->
+    { tag: "MsgSetMinLayer"
+    , args: CA.encode CA.int r
+    }
+  MsgSetMaxLayer r ->
+    { tag: "MsgSetMaxLayer"
+    , args: CA.encode CA.int r
+    }
 
 type Dispatchers =
   { emitSetStartLayer :: EffectFn1 Int Unit
   , emitSetEndLayer :: EffectFn1 Int Unit
   , runLoadGcodeLines :: EffectFn1 { url :: String } Unit
+  , msg :: EffectFn1 Msg Unit
   }
 
 dispatchers :: DispatcherApi Msg PubState {} -> Dispatchers
 dispatchers { emitMsg, emitMsgCtx, readPubState } =
   { emitSetStartLayer: emit MsgSetStartLayer
   , emitSetEndLayer: emit MsgSetEndLayer
+  , msg: mkEffectFn1 emitMsg
   , runLoadGcodeLines: run loadGcodeLines
   }
   where
@@ -134,11 +157,14 @@ dispatchers { emitMsg, emitMsgCtx, readPubState } =
       Left err -> log (printErr err)
       Right _ -> pure unit
 
-tsApi :: StateInit -> TsApi Msg PubState {} Dispatchers
-tsApi init = mkTsApi
+mkMsg :: _
+mkMsg = mkConstructors @Msg
+
+tsApi :: TsApi Msg PubState {} Dispatchers
+tsApi = mkTsApi
   { updatePubState: \msg s -> runExcept (updatePubState msg s)
   , dispatchers
-  , initPubState: initPubState init
+  , initPubState: initPubState
   , initPrivState: {}
   , printError: identity
   , encodeJsonPubState: encode codecPubState
@@ -150,6 +176,8 @@ codecPubState = carNamedObject
   { gcodeLines: codecRemoteData (CA.array CA.string)
   , startLayer: CA.int
   , endLayer: CA.int
+  , minLayer: CA.int
+  , maxLayer: CA.int
   }
 
 newtype PubStateAlias = PubStateAlias PubState
@@ -174,12 +202,13 @@ instance TsBridge Msg where
 moduleName :: String
 moduleName = "GCodeViewer.StateMachines.Viewer"
 
-useViewer :: EffectFn1 StateInit { state :: PubState, dispatch :: Dispatchers }
-useViewer = mkEffectFn1 \init -> useStateMachine (tsApi init)
+useStateMachineViewer :: Effect { state :: PubState, dispatch :: Dispatchers }
+useStateMachineViewer = useStateMachine tsApi
 
 tsExports :: Either TSB.AppError (Array DTS.TsModuleFile)
 tsExports = TSB.tsModuleFile moduleName
   [ TSB.tsValues Tok
-      { useViewer
+      { useStateMachineViewer
+      , mkMsg
       }
   ]

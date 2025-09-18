@@ -60,7 +60,7 @@ removeLastSegment :: String -> String
 removeLastSegment url =
   case Str.lastIndexOf (Str.Pattern "/") url of
     Just i -> Str.take i url
-    Nothing -> url
+    Nothing -> ""
 
 data Msg = MsgSetIndex (RemoteData { url :: String, content :: IndexFile })
 
