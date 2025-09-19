@@ -18,15 +18,20 @@
       "import": "./package.json",
       "default": "./package.json"
     },
-    "./Data/Int": {
-      "types": "./output/Data.Int/index.d.ts",
-      "import": "./output/Data.Int/index.js",
-      "default": "./output/Data.Int/index.js"
-    },
     "./Data/Maybe": {
       "types": "./output/Data.Maybe/index.d.ts",
       "import": "./output/Data.Maybe/index.js",
       "default": "./output/Data.Maybe/index.js"
+    },
+    "./Extra/Data/Int": {
+      "types": "./output/Extra.Data.Int/index.d.ts",
+      "import": "./output/Extra.Data.Int/index.js",
+      "default": "./output/Extra.Data.Int/index.js"
+    },
+    "./Extra/Data/String": {
+      "types": "./output/Extra.Data.String/index.d.ts",
+      "import": "./output/Extra.Data.String/index.js",
+      "default": "./output/Extra.Data.String/index.js"
     },
     "./GCodeViewer/Api": {
       "types": "./output/GCodeViewer.Api/index.d.ts",
