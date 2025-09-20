@@ -64,6 +64,7 @@
     "output/*/index.js",
     "output/*/index.d.ts",
     "output/*/foreign.js",
+    "output/*/foreign.d.ts",
     "package.json",
     "docs",
     "README.md"
