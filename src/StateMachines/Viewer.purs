@@ -35,7 +35,7 @@ import Stadium.TL (mkConstructors, mkCtorEmitter)
 import TsBridge as TSB
 import Type.Proxy (Proxy(..))
 
-type ModuleName = "GCodeViewer.StateMachines.Viewer"
+type ModuleName = "StateMachines.Viewer"
 
 type PubState = Named ModuleName "PubState"
   { gcodeLines :: RemoteData (Array String)

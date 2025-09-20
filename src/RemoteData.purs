@@ -14,6 +14,9 @@ import TsBridge (TypeVar)
 import TsBridge as TSB
 import Type.Proxy (Proxy(..))
 
+moduleName :: String
+moduleName = "RemoteData"
+
 data RemoteData a
   = NotAsked
   | Loading
@@ -33,9 +36,6 @@ codecRemoteData codecValue = CAS.sum "RemoteData"
   }
 
 ---
-
-moduleName :: String
-moduleName = "GCodeViewer.RemoteData"
 
 instance TsBridge a => TsBridge (RemoteData a) where
   tsBridge = TSB.tsBridgeOpaqueType

@@ -44,6 +44,8 @@ import Stadium.TL (mkConstructors, mkCtorEmitter)
 import TsBridge as TSB
 import Type.Prelude (Proxy(..))
 
+type ModuleName = "StateMachines.App"
+
 type PubState = Named ModuleName "PubState"
   { index :: RemoteData { url :: String, content :: IndexFile }
   }
@@ -144,8 +146,6 @@ instance TsBridge Msg where
   tsBridge = TSB.tsBridgeOpaqueType { moduleName, typeName: "Msg", typeArgs: [] }
 
 -----
-
-type ModuleName = "GCodeViewer.StateMachines.App"
 
 moduleName :: String
 moduleName = reflectSymbol (Proxy :: _ ModuleName)

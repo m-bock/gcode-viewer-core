@@ -15,7 +15,7 @@ import Error (Err, handleAffEither, handleEither, mkErr)
 import Error as Err
 import Named (Named, carNamedObject)
 
-type ModuleName = "GCodeViewer.Api"
+type ModuleName = "Api"
 
 -------------------------------------------------------------------------------
 
