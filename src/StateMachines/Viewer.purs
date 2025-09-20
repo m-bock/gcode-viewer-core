@@ -9,8 +9,11 @@ module StateMachines.Viewer
   ) where
 
 import Internal.Prelude
+import Prelude
 
+import Api as Api
 import Control.Monad.Error.Class (catchError)
+import Control.Monad.Rec.Class (forever)
 import DTS as DTS
 import Data.Argonaut.Core (Json)
 import Data.Codec (encode)
@@ -23,12 +26,11 @@ import Data.Symbol (reflectSymbol)
 import Effect.Aff (killFiber, runAff)
 import Effect.Exception (error)
 import Effect.Uncurried (EffectFn1, mkEffectFn1)
-import Api as Api
 import Error (Err, printErr)
-import RemoteData (RemoteData(..), codecRemoteData)
 import Internal.TsBridge (class TsBridge, Tok(..))
 import Named (Named(..), carNamedObject)
 import Record as Record
+import RemoteData (RemoteData(..), codecRemoteData)
 import Stadium.Core (DispatcherApi, TsApi, mkTsApi)
 import Stadium.React (useStateMachine)
 import Stadium.TL (mkConstructors, mkCtorEmitter)
@@ -38,7 +40,8 @@ import Type.Proxy (Proxy(..))
 type ModuleName = "StateMachines.Viewer"
 
 type PubState = Named ModuleName "PubState"
-  { gcodeLines :: RemoteData (Array String)
+  { gcodeLines :: Array String
+  , gcodeFile :: RemoteData String
   , minLayer :: Int
   , maxLayer :: Int
   , startLayer :: Int
@@ -47,7 +50,8 @@ type PubState = Named ModuleName "PubState"
 
 initPubState :: PubState
 initPubState = Named
-  { gcodeLines: NotAsked
+  { gcodeLines: []
+  , gcodeFile: NotAsked
   , startLayer: 0
   , endLayer: 100
   , minLayer: 0
@@ -57,7 +61,7 @@ initPubState = Named
 data Msg
   = MsgSetStartLayer Int
   | MsgSetEndLayer Int
-  | MsgSetGcodeLines (RemoteData (Array String))
+  | MsgSetGcodeFile (RemoteData String)
   | MsgSetMinLayer Int
   | MsgSetMaxLayer Int
 
@@ -73,8 +77,17 @@ updatePubState msg pubState = case msg of
     # set (unto Named <<< prop @"endLayer") endLayer
     # pure
 
-  MsgSetGcodeLines value -> pubState
-    # set (unto Named <<< prop @"gcodeLines") value
+  MsgSetGcodeFile value -> pubState
+    # set (unto Named <<< prop @"gcodeFile") value
+    #
+      ( case value of
+          Loaded ret ->
+            let
+              lines = Str.split (Str.Pattern "\n") ret
+            in
+              set (unto Named <<< prop @"gcodeLines") lines
+          _ -> identity
+      )
     # pure
 
   MsgSetMinLayer minLayer -> pubState
@@ -95,9 +108,9 @@ encodeMsg = case _ of
     { tag: "MsgSetEndLayer"
     , args: CA.encode CA.int r
     }
-  MsgSetGcodeLines r ->
-    { tag: "MsgSetGcodeLines"
-    , args: CA.encode (codecRemoteData (CA.array CA.string)) r
+  MsgSetGcodeFile r ->
+    { tag: "MsgSetGcodeFile"
+    , args: CA.encode (codecRemoteData CA.string) r
     }
   MsgSetMinLayer r ->
     { tag: "MsgSetMinLayer"
@@ -109,7 +122,8 @@ encodeMsg = case _ of
     }
 
 type Dispatchers r =
-  { runLoadGcodeLines :: EffectFn1 { url :: String } { cancel :: Effect Unit }
+  { runLoadGcodeLines ::
+      EffectFn1 { url :: String, interval :: Number } { cancel :: Effect Unit }
   | r
   }
 
@@ -123,24 +137,18 @@ dispatchers { emitMsg, emitMsgCtx, readPubState } =
   where
   ctors = mkCtorEmitter { emitMsg } mkMsg
 
-  loadGcodeLines :: { url :: String } -> ExceptT Err Aff Unit
-  loadGcodeLines { url } = do
-    let emitMsg' = liftEffect <<< emitMsgCtx "loadGcodeLines"
-    do
-      Named st <- liftEffect $ readPubState
-      case st.gcodeLines of
-        Loading -> pure unit
-        _ ->
-          ( do
-              emitMsg' (MsgSetGcodeLines Loading)
-              ret <- Api.getGCodeFile url
-              let lines = Str.split (Str.Pattern "\n") ret
-              emitMsg' (MsgSetGcodeLines (Loaded lines))
-          ) `catchError`
-            ( \e -> do
-                emitMsg' (MsgSetGcodeLines (Error $ printErr e))
-            )
-      pure unit
+  loadGcodeLines :: { url :: String, interval :: Number } -> ExceptT Err Aff Unit
+  loadGcodeLines { url, interval } =
+    forever
+      ( do
+          liftEffect $ emitMsg (MsgSetGcodeFile Loading)
+          ret <- Api.getGCodeFile url
+          liftEffect $ emitMsg (MsgSetGcodeFile (Loaded ret))
+          liftAff $ delay (Milliseconds interval)
+      ) `catchError`
+      ( \e -> do
+          liftEffect $ emitMsg (MsgSetGcodeFile (Error $ printErr e))
+      )
 
   run :: forall a. (a -> ExceptT Err Aff Unit) -> EffectFn1 a { cancel :: Effect Unit }
   run f = mkEffectFn1 \arg -> do
@@ -168,7 +176,8 @@ tsApi = mkTsApi
 
 codecPubState :: JsonCodec PubState
 codecPubState = carNamedObject
-  { gcodeLines: codecRemoteData (CA.array CA.string)
+  { gcodeLines: CA.array CA.string
+  , gcodeFile: codecRemoteData CA.string
   , startLayer: CA.int
   , endLayer: CA.int
   , minLayer: CA.int

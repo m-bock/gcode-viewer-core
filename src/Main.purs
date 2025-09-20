@@ -11,6 +11,7 @@ import StateMachines.Viewer as StateMachines.Viewer
 import RemoteData as RemoteData
 import Extra.Data.Int as Extra.Data.Int
 import Extra.Data.String as Extra.Data.String
+import Extra.Data.Maybe as Extra.Data.Maybe
 
 myTsProgram :: Either TSB.AppError DTS.TsProgram
 myTsProgram =
@@ -20,6 +21,7 @@ myTsProgram =
     , RemoteData.tsExports
     , Extra.Data.Int.tsExports
     , Extra.Data.String.tsExports
+    , Extra.Data.Maybe.tsExports
     ]
 
 main :: Effect Unit

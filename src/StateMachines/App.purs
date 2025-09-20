@@ -48,11 +48,13 @@ type ModuleName = "StateMachines.App"
 
 type PubState = Named ModuleName "PubState"
   { index :: RemoteData { url :: String, content :: IndexFile }
+  , filter :: String
   }
 
 initPubState :: PubState
 initPubState = Named
   { index: NotAsked
+  , filter: ""
   }
 
 mkUrl :: { absUrl :: String, relUrl :: String } -> String
@@ -64,19 +66,26 @@ removeLastSegment url =
     Just i -> Str.take i url
     Nothing -> ""
 
-data Msg = MsgSetIndex (RemoteData { url :: String, content :: IndexFile })
+data Msg
+  = MsgSetIndex (RemoteData { url :: String, content :: IndexFile })
+  | MsgSetFilter String
 
 derive instance Generic Msg _
 
 updatePubState :: Msg -> PubState -> Except String PubState
 updatePubState msg pubState = case msg of
   MsgSetIndex r -> pubState # set (unto Named <<< prop @"index") r # pure
+  MsgSetFilter r -> pubState # set (unto Named <<< prop @"filter") r # pure
 
 encodeMsg :: Msg -> { tag :: String, args :: Json }
 encodeMsg = case _ of
   MsgSetIndex r ->
     { tag: "MsgSetIndex"
     , args: CA.encode (codecRemoteData (CAR.object "" { url: CA.string, content: codecIndexFile })) r
+    }
+  MsgSetFilter r ->
+    { tag: "MsgSetFilter"
+    , args: CA.encode CA.string r
     }
 
 type Dispatchers r =
@@ -140,7 +149,11 @@ useStateMachineApp = useStateMachine tsApi
 codecPubState :: JsonCodec PubState
 codecPubState = carNamedObject
   { index: codecRemoteData (CAR.object "" { url: CA.string, content: codecIndexFile })
+  , filter: CA.string
   }
+
+filterBy :: String -> Array IndexFile -> Array IndexFile
+filterBy filter files = filterBy filter files
 
 instance TsBridge Msg where
   tsBridge = TSB.tsBridgeOpaqueType { moduleName, typeName: "Msg", typeArgs: [] }

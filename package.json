@@ -31,6 +31,11 @@
       "import": "./output/Extra.Data.Int/index.js",
       "default": "./output/Extra.Data.Int/index.js"
     },
+    "./Extra/Data/Maybe": {
+      "types": "./output/Extra.Data.Maybe/index.d.ts",
+      "import": "./output/Extra.Data.Maybe/index.js",
+      "default": "./output/Extra.Data.Maybe/index.js"
+    },
     "./Extra/Data/String": {
       "types": "./output/Extra.Data.String/index.d.ts",
       "import": "./output/Extra.Data.String/index.js",
