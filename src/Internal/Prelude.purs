@@ -1,4 +1,4 @@
-module GCodeViewer.Prelude
+module Internal.Prelude
   ( module Export
   , prop
   ) where

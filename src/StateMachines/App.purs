@@ -1,17 +1,16 @@
-module GCodeViewer.StateMachines.App
+module StateMachines.App
   ( Dispatchers
   , ModuleName
   , Msg(..)
   , PubState
   , getQueryParams
-  , mkMsg
   , mkUrl
   , tsApi
   , tsExports
   , useStateMachineApp
   ) where
 
-import GCodeViewer.Prelude
+import Internal.Prelude
 
 import Control.Monad.Error.Class (catchError)
 import Control.Monad.Writer (Writer, runWriter)
@@ -29,11 +28,11 @@ import Data.Symbol (reflectSymbol)
 import Data.Tuple (Tuple)
 import Data.Tuple.Nested ((/\))
 import Effect.Uncurried (EffectFn1, mkEffectFn1)
-import GCodeViewer.Api (IndexFile, codecIndexFile)
-import GCodeViewer.Api as Api
-import GCodeViewer.Error (Err, printErr)
-import GCodeViewer.RemoteData (RemoteData(..), codecRemoteData)
-import GCodeViewer.TsBridge (class TsBridge, Tok(..))
+import Api (IndexFile, codecIndexFile)
+import Api as Api
+import Error (Err, printErr)
+import RemoteData (RemoteData(..), codecRemoteData)
+import Internal.TsBridge (class TsBridge, Tok(..))
 import Named (Named(..), carNamedObject)
 import Record as Record
 import Routing.Duplex (class RouteDuplexParams)
@@ -158,7 +157,6 @@ tsExports :: Either TSB.AppError (Array DTS.TsModuleFile)
 tsExports = TSB.tsModuleFile moduleName
   [ TSB.tsValues Tok
       { useStateMachineApp
-      , mkMsg
       , getQueryParams
       , mkUrl
       }

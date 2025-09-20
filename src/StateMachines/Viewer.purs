@@ -1,4 +1,4 @@
-module GCodeViewer.StateMachines.Viewer
+module StateMachines.Viewer
   ( Dispatchers
   , ModuleName
   , Msg(..)
@@ -6,13 +6,11 @@ module GCodeViewer.StateMachines.Viewer
   , tsApi
   , tsExports
   , useStateMachineViewer
-  , mkMsg
   ) where
 
-import GCodeViewer.Prelude
+import Internal.Prelude
 
 import Control.Monad.Error.Class (catchError)
-import Control.Monad.Rec.Class (forever)
 import DTS as DTS
 import Data.Argonaut.Core (Json)
 import Data.Codec (encode)
@@ -20,23 +18,22 @@ import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
 import Data.Lens (set)
 import Data.Lens.Iso.Newtype (unto)
-import Data.Newtype (class Newtype)
 import Data.String as Str
+import Data.Symbol (reflectSymbol)
 import Effect.Aff (killFiber, runAff)
 import Effect.Exception (error)
 import Effect.Uncurried (EffectFn1, mkEffectFn1)
-import GCodeViewer.Api as Api
-import GCodeViewer.Error (Err, mkErr, printErr)
-import GCodeViewer.Error as Err
-import GCodeViewer.RemoteData (RemoteData(..), codecRemoteData)
-import GCodeViewer.TsBridge (class TsBridge, Tok(..))
-import Heterogeneous.Mapping (class HMap, class Mapping, hmap)
+import Api as Api
+import Error (Err, printErr)
+import RemoteData (RemoteData(..), codecRemoteData)
+import Internal.TsBridge (class TsBridge, Tok(..))
 import Named (Named(..), carNamedObject)
 import Record as Record
 import Stadium.Core (DispatcherApi, TsApi, mkTsApi)
 import Stadium.React (useStateMachine)
-import Stadium.TL (mkConstructors, mkCtorEmitter, mkMatcher)
+import Stadium.TL (mkConstructors, mkCtorEmitter)
 import TsBridge as TSB
+import Type.Proxy (Proxy(..))
 
 type ModuleName = "GCodeViewer.StateMachines.Viewer"
 
@@ -184,7 +181,7 @@ instance TsBridge Msg where
 -----
 
 moduleName :: String
-moduleName = "GCodeViewer.StateMachines.Viewer"
+moduleName = reflectSymbol (Proxy :: Proxy ModuleName)
 
 useStateMachineViewer :: Effect { state :: PubState, dispatch :: Dispatchers _ }
 useStateMachineViewer = useStateMachine tsApi
@@ -193,6 +190,5 @@ tsExports :: Either TSB.AppError (Array DTS.TsModuleFile)
 tsExports = TSB.tsModuleFile moduleName
   [ TSB.tsValues Tok
       { useStateMachineViewer
-      , mkMsg
       }
   ]

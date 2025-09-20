@@ -1,4 +1,4 @@
-module GCodeViewer.TsBridge where
+module Internal.TsBridge where
 
 import Prelude
 

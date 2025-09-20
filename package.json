@@ -6,9 +6,6 @@
   "directories": {
     "test": "test"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
-  },
   "exports": {
     "./react-utils": {
       "import": "./output/Stadium.React/foreign.js",

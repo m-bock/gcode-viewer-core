@@ -7,7 +7,7 @@ import Prelude
 
 import DTS as DTS
 import Data.Either (Either)
-import GCodeViewer.TsBridge (Tok(..))
+import Internal.TsBridge (Tok(..))
 import TsBridge as TSB
 
 moduleName :: String

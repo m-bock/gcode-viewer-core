@@ -1,6 +1,6 @@
-module GCodeViewer.Error where
+module Error where
 
-import GCodeViewer.Prelude
+import Internal.Prelude
 
 type Err = { message :: String, code :: ErrCode }
 

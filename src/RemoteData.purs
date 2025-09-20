@@ -1,4 +1,4 @@
-module GCodeViewer.RemoteData where
+module RemoteData where
 
 import Prelude
 
@@ -7,8 +7,8 @@ import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Sum as CAS
 import Data.Tuple.Nested ((/\))
-import GCodeViewer.Prelude (class Generic, Either)
-import GCodeViewer.TsBridge (class TsBridge, tsBridge, Tok(..))
+import Internal.Prelude (class Generic, Either)
+import Internal.TsBridge (class TsBridge, tsBridge, Tok(..))
 import Stadium.TL (mkConstructors1, mkMatcher1)
 import TsBridge (TypeVar)
 import TsBridge as TSB

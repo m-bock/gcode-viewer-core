@@ -1,4 +1,4 @@
-module GCodeViewer.Api where
+module Api where
 
 import Prelude
 
@@ -11,8 +11,8 @@ import Control.Monad.Except (ExceptT)
 import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
 import Effect.Aff (Aff)
-import GCodeViewer.Error (Err, handleAffEither, handleEither, mkErr)
-import GCodeViewer.Error as Err
+import Error (Err, handleAffEither, handleEither, mkErr)
+import Error as Err
 import Named (Named, carNamedObject)
 
 type ModuleName = "GCodeViewer.Api"
