@@ -35,12 +35,13 @@ import GCodeViewer.Error (Err, printErr)
 import GCodeViewer.RemoteData (RemoteData(..), codecRemoteData)
 import GCodeViewer.TsBridge (class TsBridge, Tok(..))
 import Named (Named(..), carNamedObject)
+import Record as Record
 import Routing.Duplex (class RouteDuplexParams)
 import Routing.Duplex as RD
 import Routing.Duplex.Parser (RouteError)
 import Stadium.Core (DispatcherApi, TsApi, mkTsApi)
 import Stadium.React (useStateMachine)
-import Stadium.TL (mkConstructors)
+import Stadium.TL (mkConstructors, mkCtorEmitter)
 import TsBridge as TSB
 import Type.Prelude (Proxy(..))
 
@@ -77,9 +78,9 @@ encodeMsg = case _ of
     , args: CA.encode (codecRemoteData (CAR.object "" { url: CA.string, content: codecIndexFile })) r
     }
 
-type Dispatchers = Named ModuleName "Dispatchers"
-  { msg :: EffectFn1 Msg Unit
-  , runFetchIndex :: EffectFn1 { url :: String } Unit
+type Dispatchers r =
+  { runFetchIndex :: EffectFn1 { url :: String } Unit
+  | r
   }
 
 getQueryParams :: Effect Query
@@ -88,13 +89,16 @@ getQueryParams = do
   let (query /\ errors) = parseQuery searchParams
   pure query
 
-dispatchers :: DispatcherApi Msg PubState {} -> Dispatchers
+dispatchers :: DispatcherApi Msg PubState {} -> Dispatchers _
 dispatchers { emitMsg, emitMsgCtx, readPubState } =
-  Named
-    { msg: mkEffectFn1 emitMsg
-    , runFetchIndex: run fetchIndex
-    }
+  ( Record.merge
+      { runFetchIndex: run fetchIndex
+      }
+      ctors
+  )
   where
+  ctors = mkCtorEmitter { emitMsg } mkMsg
+
   fetchIndex :: { url :: String } -> ExceptT Err Aff Unit
   fetchIndex { url } = do
     Named st <- liftEffect $ readPubState
@@ -118,7 +122,7 @@ run f = mkEffectFn1 \arg -> launchAff_ do
     Left err -> log (printErr err)
     Right _ -> pure unit
 
-tsApi :: TsApi Msg PubState {} Dispatchers
+tsApi :: TsApi Msg PubState {} (Dispatchers _)
 tsApi = mkTsApi
   { updatePubState: \msg s -> runExcept (updatePubState msg s)
   , dispatchers
@@ -129,7 +133,7 @@ tsApi = mkTsApi
   , encodeMsg
   }
 
-useStateMachineApp :: Effect { state :: PubState, dispatch :: Dispatchers }
+useStateMachineApp :: Effect { state :: PubState, dispatch :: Dispatchers _ }
 useStateMachineApp = useStateMachine tsApi
 
 codecPubState :: JsonCodec PubState

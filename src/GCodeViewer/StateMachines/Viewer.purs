@@ -30,12 +30,12 @@ import GCodeViewer.Error (Err, mkErr, printErr)
 import GCodeViewer.Error as Err
 import GCodeViewer.RemoteData (RemoteData(..), codecRemoteData)
 import GCodeViewer.TsBridge (class TsBridge, Tok(..))
-import Heterogeneous.Mapping (class Mapping, hmap)
+import Heterogeneous.Mapping (class HMap, class Mapping, hmap)
 import Named (Named(..), carNamedObject)
 import Record as Record
 import Stadium.Core (DispatcherApi, TsApi, mkTsApi)
 import Stadium.React (useStateMachine)
-import Stadium.TL (mkConstructors, mkMatcher)
+import Stadium.TL (mkConstructors, mkCtorEmitter, mkMatcher)
 import TsBridge as TSB
 
 type ModuleName = "GCodeViewer.StateMachines.Viewer"
@@ -113,25 +113,18 @@ encodeMsg = case _ of
 
 type Dispatchers r =
   { runLoadGcodeLines :: EffectFn1 { url :: String } { cancel :: Effect Unit }
-  , msg :: EffectFn1 Msg Unit
   | r
   }
-
-data F msg = F { emitMsg :: msg -> Effect Unit }
-
-instance Mapping (F msg) (arg -> msg) (EffectFn1 arg Unit) where
-  mapping (F { emitMsg }) mkMsg = mkEffectFn1 \arg -> emitMsg (mkMsg arg)
 
 dispatchers :: DispatcherApi Msg PubState {} -> Dispatchers _
 dispatchers { emitMsg, emitMsgCtx, readPubState } =
   ( Record.merge
-      { msg: mkEffectFn1 emitMsg
-      , runLoadGcodeLines: run loadGcodeLines
+      { runLoadGcodeLines: run loadGcodeLines
       }
       ctors
   )
   where
-  ctors = hmap (F { emitMsg }) mkMsg
+  ctors = mkCtorEmitter { emitMsg } mkMsg
 
   loadGcodeLines :: { url :: String } -> ExceptT Err Aff Unit
   loadGcodeLines { url } = do
