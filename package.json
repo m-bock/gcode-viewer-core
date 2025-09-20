@@ -12,7 +12,8 @@
   "exports": {
     "./react-utils": {
       "import": "./output/Stadium.React/foreign.js",
-      "default": "./output/Stadium.React/foreign.js"
+      "default": "./output/Stadium.React/foreign.js",
+      "types": "./output/Stadium.React/foreign.d.ts"
     },
     "./package.json": {
       "import": "./package.json",
@@ -52,6 +53,11 @@
       "types": "./output/GCodeViewer.StateMachines.Viewer/index.d.ts",
       "import": "./output/GCodeViewer.StateMachines.Viewer/index.js",
       "default": "./output/GCodeViewer.StateMachines.Viewer/index.js"
+    },
+    "./Prim": {
+      "types": "./output/Prim/index.d.ts",
+      "import": "./output/Prim/index.js",
+      "default": "./output/Prim/index.js"
     }
   },
   "files": [

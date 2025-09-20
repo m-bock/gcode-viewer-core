@@ -17,6 +17,9 @@ gen-types:
 gen-type-docs:
     npx typedoc "output/*/index.d.ts" --out docs/api/{{VERSION}} --readme none --tsconfig tsconfig.typedoc.json
 
+gen-foreign-types:
+    npx tsc  ./output/Stadium.React/foreign.js --allowJs --declaration --emitDeclarationOnly 
+
 check-exports:
     node scripts/check-exports.js
 
@@ -34,6 +37,6 @@ publish:
     git push
     npx gh-pages -d docs --add
 
-run-publish: check-git-clean clean gen-types check-exports patch-package-json gen-type-docs pack-release generate-doc-page publish
+run-publish: check-git-clean clean gen-types gen-foreign-types check-exports patch-package-json gen-type-docs pack-release generate-doc-page publish
 
-run-dev: gen-types check-exports patch-package-json
+run-dev: gen-types gen-foreign-types check-exports patch-package-json

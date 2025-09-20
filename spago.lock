@@ -688,7 +688,7 @@
       },
       "stadium": {
         "git": "https://github.com/m-bock/purescript-stadium",
-        "ref": "6ea4465c4a782ffa3f9e3902d5f79be13a010bd0"
+        "ref": "732490f066eb87a4b05a6cb0a46cf06e75e9cc00"
       },
       "ts-bridge": {
         "path": "../purescript-ts-bridge"
@@ -1716,7 +1716,7 @@
     "stadium": {
       "type": "git",
       "url": "https://github.com/m-bock/purescript-stadium",
-      "rev": "6ea4465c4a782ffa3f9e3902d5f79be13a010bd0",
+      "rev": "732490f066eb87a4b05a6cb0a46cf06e75e9cc00",
       "dependencies": [
         "argonaut-core",
         "codec-argonaut",

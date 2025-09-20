@@ -12,6 +12,7 @@ module GCodeViewer.StateMachines.Viewer
 import GCodeViewer.Prelude
 
 import Control.Monad.Error.Class (catchError)
+import Control.Monad.Rec.Class (forever)
 import DTS as DTS
 import Data.Argonaut.Core (Json)
 import Data.Codec (encode)
@@ -21,13 +22,17 @@ import Data.Lens (set)
 import Data.Lens.Iso.Newtype (unto)
 import Data.Newtype (class Newtype)
 import Data.String as Str
+import Effect.Aff (killFiber, runAff)
+import Effect.Exception (error)
 import Effect.Uncurried (EffectFn1, mkEffectFn1)
 import GCodeViewer.Api as Api
 import GCodeViewer.Error (Err, mkErr, printErr)
 import GCodeViewer.Error as Err
 import GCodeViewer.RemoteData (RemoteData(..), codecRemoteData)
 import GCodeViewer.TsBridge (class TsBridge, Tok(..))
+import Heterogeneous.Mapping (class Mapping, hmap)
 import Named (Named(..), carNamedObject)
+import Record as Record
 import Stadium.Core (DispatcherApi, TsApi, mkTsApi)
 import Stadium.React (useStateMachine)
 import Stadium.TL (mkConstructors, mkMatcher)
@@ -106,61 +111,61 @@ encodeMsg = case _ of
     , args: CA.encode CA.int r
     }
 
-type Dispatchers =
-  { emitSetStartLayer :: EffectFn1 Int Unit
-  , emitSetEndLayer :: EffectFn1 Int Unit
-  , runLoadGcodeLines :: EffectFn1 { url :: String } Unit
+type Dispatchers r =
+  { runLoadGcodeLines :: EffectFn1 { url :: String } { cancel :: Effect Unit }
   , msg :: EffectFn1 Msg Unit
+  | r
   }
 
-dispatchers :: DispatcherApi Msg PubState {} -> Dispatchers
+data F msg = F { emitMsg :: msg -> Effect Unit }
+
+instance Mapping (F msg) (arg -> msg) (EffectFn1 arg Unit) where
+  mapping (F { emitMsg }) mkMsg = mkEffectFn1 \arg -> emitMsg (mkMsg arg)
+
+dispatchers :: DispatcherApi Msg PubState {} -> Dispatchers _
 dispatchers { emitMsg, emitMsgCtx, readPubState } =
-  { emitSetStartLayer: emit MsgSetStartLayer
-  , emitSetEndLayer: emit MsgSetEndLayer
-  , msg: mkEffectFn1 emitMsg
-  , runLoadGcodeLines: run loadGcodeLines
-  }
+  ( Record.merge
+      { msg: mkEffectFn1 emitMsg
+      , runLoadGcodeLines: run loadGcodeLines
+      }
+      ctors
+  )
   where
+  ctors = hmap (F { emitMsg }) mkMsg
+
   loadGcodeLines :: { url :: String } -> ExceptT Err Aff Unit
-  loadGcodeLines { url } =
-    let
-      emitMsg' = liftEffect <<< emitMsgCtx "loadGcodeLines"
-    in
-      ( do
-          Named st <- liftEffect $ readPubState
+  loadGcodeLines { url } = do
+    let emitMsg' = liftEffect <<< emitMsgCtx "loadGcodeLines"
+    do
+      Named st <- liftEffect $ readPubState
+      case st.gcodeLines of
+        Loading -> pure unit
+        _ ->
+          ( do
+              emitMsg' (MsgSetGcodeLines Loading)
+              ret <- Api.getGCodeFile url
+              let lines = Str.split (Str.Pattern "\n") ret
+              emitMsg' (MsgSetGcodeLines (Loaded lines))
+          ) `catchError`
+            ( \e -> do
+                emitMsg' (MsgSetGcodeLines (Error $ printErr e))
+            )
+      pure unit
 
-          when (st.gcodeLines == Loading) $ do
-            throwError (mkErr Err.Err6 "Gcode lines are already loading")
+  run :: forall a. (a -> ExceptT Err Aff Unit) -> EffectFn1 a { cancel :: Effect Unit }
+  run f = mkEffectFn1 \arg -> do
+    fiber <- runAff (const $ pure unit) do
+      result <- runExceptT $ f arg
+      case result of
+        Left err -> log (printErr err)
+        Right _ -> pure unit
 
-          emitMsg' $ MsgSetGcodeLines Loading
-          ret <- Api.getGCodeFile url
-
-          let lines = Str.split (Str.Pattern "\n") ret
-          emitMsg' $ MsgSetGcodeLines (Loaded lines)
-      )
-        `catchError`
-          ( \e -> do
-              log $ Err.printErr e
-
-              case e.code of
-                Err.Err6 -> pure unit
-                _ -> emitMsg' $ MsgSetGcodeLines (Error (printErr e))
-          )
-
-  emit :: forall a. (a -> Msg) -> EffectFn1 a Unit
-  emit f = mkEffectFn1 \arg -> emitMsg (f arg)
-
-  run :: forall a. (a -> ExceptT Err Aff Unit) -> EffectFn1 a Unit
-  run f = mkEffectFn1 \arg -> launchAff_ do
-    result <- runExceptT $ f arg
-    case result of
-      Left err -> log (printErr err)
-      Right _ -> pure unit
+    pure { cancel: launchAff_ $ killFiber (error "cancel") fiber }
 
 mkMsg :: _
 mkMsg = mkConstructors @Msg
 
-tsApi :: TsApi Msg PubState {} Dispatchers
+tsApi :: TsApi Msg PubState {} (Dispatchers _)
 tsApi = mkTsApi
   { updatePubState: \msg s -> runExcept (updatePubState msg s)
   , dispatchers
@@ -180,20 +185,6 @@ codecPubState = carNamedObject
   , maxLayer: CA.int
   }
 
-newtype PubStateAlias = PubStateAlias PubState
-
-derive instance Newtype (PubStateAlias) _
-
-instance TsBridge (PubStateAlias) where
-  tsBridge = TSB.tsBridgeNewtype0 Tok { moduleName, typeName: "PubState" }
-
-newtype DispatchersAlias = DispatchersAlias Dispatchers
-
-derive instance Newtype (DispatchersAlias) _
-
-instance TsBridge (DispatchersAlias) where
-  tsBridge = TSB.tsBridgeNewtype0 Tok { moduleName, typeName: "Dispatchers" }
-
 instance TsBridge Msg where
   tsBridge = TSB.tsBridgeOpaqueType { moduleName, typeName: "Msg", typeArgs: [] }
 
@@ -202,7 +193,7 @@ instance TsBridge Msg where
 moduleName :: String
 moduleName = "GCodeViewer.StateMachines.Viewer"
 
-useStateMachineViewer :: Effect { state :: PubState, dispatch :: Dispatchers }
+useStateMachineViewer :: Effect { state :: PubState, dispatch :: Dispatchers _ }
 useStateMachineViewer = useStateMachine tsApi
 
 tsExports :: Either TSB.AppError (Array DTS.TsModuleFile)

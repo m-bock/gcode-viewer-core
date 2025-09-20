@@ -12,7 +12,7 @@ const projectRoot = path.resolve(__dirname, "..");
 const CONFIG = {
   outputDir: "output",
   packageJsonFile: "package.json",
-  requiredFiles: ["index.d.ts", "index.js"],
+  requiredFiles: ["index.d.ts"],
 };
 
 /**
