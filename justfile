@@ -41,6 +41,6 @@ publish:
     git push
     npx gh-pages -d docs --add
 
-run-publish: check-git-clean clean gen-types gen-foreign-types check-exports patch-package-json gen-type-docs pack-release generate-doc-page publish
+run-publish: check-git-clean clean gen-types gen-foreign-types check-exports patch-package-json gen-type-docs pack-release link-release generate-doc-page publish
 
 run-dev: gen-types gen-foreign-types check-exports patch-package-json
