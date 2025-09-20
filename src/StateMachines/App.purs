@@ -7,16 +7,20 @@ module StateMachines.App
   , mkUrl
   , tsApi
   , tsExports
+  , selectFilteredFiles
   , useStateMachineApp
   ) where
 
 import Internal.Prelude
 
+import Api (IndexFile, IndexFileItem, codecIndexFile)
+import Api as Api
 import Control.Monad.Error.Class (catchError)
 import Control.Monad.Writer (Writer, runWriter)
 import Control.Monad.Writer.Class (tell)
 import DTS as DTS
 import Data.Argonaut.Core (Json)
+import Data.Array as Array
 import Data.Codec (encode)
 import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
@@ -28,13 +32,11 @@ import Data.Symbol (reflectSymbol)
 import Data.Tuple (Tuple)
 import Data.Tuple.Nested ((/\))
 import Effect.Uncurried (EffectFn1, mkEffectFn1)
-import Api (IndexFile, codecIndexFile)
-import Api as Api
 import Error (Err, printErr)
-import RemoteData (RemoteData(..), codecRemoteData)
 import Internal.TsBridge (class TsBridge, Tok(..))
 import Named (Named(..), carNamedObject)
 import Record as Record
+import RemoteData (RemoteData(..), codecRemoteData)
 import Routing.Duplex (class RouteDuplexParams)
 import Routing.Duplex as RD
 import Routing.Duplex.Parser (RouteError)
@@ -92,6 +94,17 @@ type Dispatchers r =
   { runFetchIndex :: EffectFn1 { url :: String } Unit
   | r
   }
+
+selectFilteredFiles :: PubState -> Array IndexFileItem
+selectFilteredFiles (Named st) = case st.index of
+  Loaded { content } -> Array.filter filterFn content
+  _ -> []
+
+  where
+  filterFn :: IndexFileItem -> Boolean
+  filterFn (Named { name }) = case st.filter of
+    "" -> true
+    _ -> Str.contains (Str.Pattern st.filter) name
 
 getQueryParams :: Effect Query
 getQueryParams = do
@@ -172,6 +185,7 @@ tsExports = TSB.tsModuleFile moduleName
       { useStateMachineApp
       , getQueryParams
       , mkUrl
+      , selectFilteredFiles
       }
   ]
 
