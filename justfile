@@ -27,6 +27,10 @@ pack-release:
     mkdir -p docs/releases
     npm pack --quiet --pack-destination docs/releases
 
+link-release:
+    mkdir -p docs/v
+    ln -s ../releases/m-bock-gcode-viewer-core-{{VERSION}}.tgz docs/v/{{VERSION}}
+
 patch-package-json:
     node scripts/generate-exports.mjs
     

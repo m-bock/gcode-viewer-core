@@ -16,6 +16,11 @@
       "import": "./package.json",
       "default": "./package.json"
     },
+    "./Api": {
+      "types": "./output/Api/index.d.ts",
+      "import": "./output/Api/index.js",
+      "default": "./output/Api/index.js"
+    },
     "./Data/Maybe": {
       "types": "./output/Data.Maybe/index.d.ts",
       "import": "./output/Data.Maybe/index.js",
@@ -31,30 +36,25 @@
       "import": "./output/Extra.Data.String/index.js",
       "default": "./output/Extra.Data.String/index.js"
     },
-    "./GCodeViewer/Api": {
-      "types": "./output/GCodeViewer.Api/index.d.ts",
-      "import": "./output/GCodeViewer.Api/index.js",
-      "default": "./output/GCodeViewer.Api/index.js"
-    },
-    "./GCodeViewer/RemoteData": {
-      "types": "./output/GCodeViewer.RemoteData/index.d.ts",
-      "import": "./output/GCodeViewer.RemoteData/index.js",
-      "default": "./output/GCodeViewer.RemoteData/index.js"
-    },
-    "./GCodeViewer/StateMachines/App": {
-      "types": "./output/GCodeViewer.StateMachines.App/index.d.ts",
-      "import": "./output/GCodeViewer.StateMachines.App/index.js",
-      "default": "./output/GCodeViewer.StateMachines.App/index.js"
-    },
-    "./GCodeViewer/StateMachines/Viewer": {
-      "types": "./output/GCodeViewer.StateMachines.Viewer/index.d.ts",
-      "import": "./output/GCodeViewer.StateMachines.Viewer/index.js",
-      "default": "./output/GCodeViewer.StateMachines.Viewer/index.js"
-    },
     "./Prim": {
       "types": "./output/Prim/index.d.ts",
       "import": "./output/Prim/index.js",
       "default": "./output/Prim/index.js"
+    },
+    "./RemoteData": {
+      "types": "./output/RemoteData/index.d.ts",
+      "import": "./output/RemoteData/index.js",
+      "default": "./output/RemoteData/index.js"
+    },
+    "./StateMachines/App": {
+      "types": "./output/StateMachines.App/index.d.ts",
+      "import": "./output/StateMachines.App/index.js",
+      "default": "./output/StateMachines.App/index.js"
+    },
+    "./StateMachines/Viewer": {
+      "types": "./output/StateMachines.Viewer/index.d.ts",
+      "import": "./output/StateMachines.Viewer/index.js",
+      "default": "./output/StateMachines.Viewer/index.js"
     }
   },
   "files": [
