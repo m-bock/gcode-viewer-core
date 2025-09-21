@@ -36,4 +36,6 @@ workspace:
 
     stadium:
       git: https://github.com/m-bock/purescript-stadium
-      ref: f3a9bca71fb88d08e135cca4b6015da2b267fe6f
+      ref: 49eeb1eef4dd1a870a9adb4e942f7323bcb9257d
+    # stadium:
+    #   path: ../purescript-stadium

@@ -25,6 +25,7 @@ import Data.Codec (encode)
 import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Record as CAR
+import Data.Codec.Argonaut.Sum as CAR
 import Data.Lens (set)
 import Data.Lens.Iso.Newtype (unto)
 import Data.String as Str
@@ -40,7 +41,7 @@ import RemoteData (RemoteData(..), codecRemoteData)
 import Routing.Duplex (class RouteDuplexParams)
 import Routing.Duplex as RD
 import Routing.Duplex.Parser (RouteError)
-import Stadium.Core (DispatcherApi, TsApi, mkTsApi)
+import Stadium.Core (DispatcherApi, TsApi, defaultDebugMsg, mkTsApi)
 import Stadium.React (useStateMachine)
 import Stadium.TL (mkConstructors, mkCtorEmitter)
 import TsBridge as TSB
@@ -79,19 +80,14 @@ updatePubState msg pubState = case msg of
   MsgSetIndex r -> pubState # set (unto Named <<< prop @"index") r # pure
   MsgSetFilter r -> pubState # set (unto Named <<< prop @"filter") r # pure
 
-encodeMsg :: Msg -> { tag :: String, args :: Json }
-encodeMsg = case _ of
-  MsgSetIndex r ->
-    { tag: "MsgSetIndex"
-    , args: CA.encode (codecRemoteData (CAR.object "" { url: CA.string, content: codecIndexFile })) r
-    }
-  MsgSetFilter r ->
-    { tag: "MsgSetFilter"
-    , args: CA.encode CA.string r
-    }
+codecMsg :: JsonCodec Msg
+codecMsg = CAR.sum "Msg"
+  { "MsgSetIndex": codecRemoteData (CAR.object "" { url: CA.string, content: codecIndexFile })
+  , "MsgSetFilter": CA.string
+  }
 
 type Dispatchers r =
-  { runFetchIndex :: EffectFn1 { url :: String } Unit
+  { runFetchIndex :: EffectFn1 { url :: String, label :: String } Unit
   | r
   }
 
@@ -122,20 +118,20 @@ dispatchers { emitMsg, emitMsgCtx, readPubState } =
   where
   ctors = mkCtorEmitter { emitMsg } mkMsg
 
-  fetchIndex :: { url :: String } -> ExceptT Err Aff Unit
-  fetchIndex { url } = do
+  fetchIndex :: { url :: String, label :: String } -> ExceptT Err Aff Unit
+  fetchIndex { url, label } = do
+    let emit = liftEffect <<< emitMsgCtx label
     Named st <- liftEffect $ readPubState
     if st.index == Loading then do
       pure unit
     else
       ( do
-
-          liftEffect $ emitMsg $ MsgSetIndex Loading
+          emit $ MsgSetIndex Loading
           index <- Api.getIndexFile { url }
-          liftEffect $ emitMsg $ MsgSetIndex (Loaded { url, content: index })
+          emit $ MsgSetIndex (Loaded { url, content: index })
       ) `catchError`
         ( \e -> do
-            liftEffect $ emitMsg $ MsgSetIndex (Error (printErr e))
+            emit $ MsgSetIndex (Error (printErr e))
         )
 
 run :: forall a. (a -> ExceptT Err Aff Unit) -> EffectFn1 a Unit
@@ -153,7 +149,8 @@ tsApi = mkTsApi
   , initPrivState: {}
   , printError: identity
   , encodeJsonPubState: encode codecPubState
-  , encodeMsg
+  , encodeMsg: encode codecMsg
+  , debugMsg: defaultDebugMsg
   }
 
 useStateMachineApp :: Effect { state :: PubState, dispatch :: Dispatchers _ }
@@ -164,9 +161,6 @@ codecPubState = carNamedObject
   { index: codecRemoteData (CAR.object "" { url: CA.string, content: codecIndexFile })
   , filter: CA.string
   }
-
-filterBy :: String -> Array IndexFile -> Array IndexFile
-filterBy filter files = filterBy filter files
 
 instance TsBridge Msg where
   tsBridge = TSB.tsBridgeOpaqueType { moduleName, typeName: "Msg", typeArgs: [] }

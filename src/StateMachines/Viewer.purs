@@ -19,6 +19,7 @@ import Data.Argonaut.Core (Json)
 import Data.Codec (encode)
 import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
+import Data.Codec.Argonaut.Sum as CAR
 import Data.Lens (set)
 import Data.Lens.Iso.Newtype (unto)
 import Data.String as Str
@@ -31,7 +32,7 @@ import Internal.TsBridge (class TsBridge, Tok(..))
 import Named (Named(..), carNamedObject)
 import Record as Record
 import RemoteData (RemoteData(..), codecRemoteData)
-import Stadium.Core (DispatcherApi, TsApi, mkTsApi)
+import Stadium.Core (DispatcherApi, TsApi, defaultDebugMsg, mkTsApi)
 import Stadium.React (useStateMachine)
 import Stadium.TL (mkConstructors, mkCtorEmitter)
 import TsBridge as TSB
@@ -98,32 +99,18 @@ updatePubState msg pubState = case msg of
     # set (unto Named <<< prop @"maxLayer") maxLayer
     # pure
 
-encodeMsg :: Msg -> { tag :: String, args :: Json }
-encodeMsg = case _ of
-  MsgSetStartLayer r ->
-    { tag: "MsgSetStartLayer"
-    , args: CA.encode CA.int r
-    }
-  MsgSetEndLayer r ->
-    { tag: "MsgSetEndLayer"
-    , args: CA.encode CA.int r
-    }
-  MsgSetGcodeFile r ->
-    { tag: "MsgSetGcodeFile"
-    , args: CA.encode (codecRemoteData CA.string) r
-    }
-  MsgSetMinLayer r ->
-    { tag: "MsgSetMinLayer"
-    , args: CA.encode CA.int r
-    }
-  MsgSetMaxLayer r ->
-    { tag: "MsgSetMaxLayer"
-    , args: CA.encode CA.int r
-    }
+codecMsg :: JsonCodec Msg
+codecMsg = CAR.sum "Msg"
+  { "MsgSetStartLayer": CA.int
+  , "MsgSetEndLayer": CA.int
+  , "MsgSetGcodeFile": codecRemoteData CA.string
+  , "MsgSetMinLayer": CA.int
+  , "MsgSetMaxLayer": CA.int
+  }
 
 type Dispatchers r =
   { runLoadGcodeLines ::
-      EffectFn1 { url :: String, interval :: Number } { cancel :: Effect Unit }
+      EffectFn1 { label :: String, url :: String, interval :: Number } { cancel :: Effect Unit }
   | r
   }
 
@@ -137,18 +124,21 @@ dispatchers { emitMsg, emitMsgCtx, readPubState } =
   where
   ctors = mkCtorEmitter { emitMsg } mkMsg
 
-  loadGcodeLines :: { url :: String, interval :: Number } -> ExceptT Err Aff Unit
-  loadGcodeLines { url, interval } =
-    forever
-      ( do
-          liftEffect $ emitMsg (MsgSetGcodeFile Loading)
-          ret <- Api.getGCodeFile url
-          liftEffect $ emitMsg (MsgSetGcodeFile (Loaded ret))
-          liftAff $ delay (Milliseconds interval)
-      ) `catchError`
-      ( \e -> do
-          liftEffect $ emitMsg (MsgSetGcodeFile (Error $ printErr e))
-      )
+  loadGcodeLines :: { label :: String, url :: String, interval :: Number } -> ExceptT Err Aff Unit
+  loadGcodeLines { label, url, interval } =
+    let
+      emit = liftEffect <<< emitMsgCtx label
+    in
+      forever
+        ( do
+            emit $ MsgSetGcodeFile Loading
+            ret <- Api.getGCodeFile url
+            emit $ MsgSetGcodeFile (Loaded ret)
+            liftAff $ delay (Milliseconds interval)
+        ) `catchError`
+        ( \e -> do
+            emit $ MsgSetGcodeFile (Error $ printErr e)
+        )
 
   run :: forall a. (a -> ExceptT Err Aff Unit) -> EffectFn1 a { cancel :: Effect Unit }
   run f = mkEffectFn1 \arg -> do
@@ -171,7 +161,8 @@ tsApi = mkTsApi
   , initPrivState: {}
   , printError: identity
   , encodeJsonPubState: encode codecPubState
-  , encodeMsg
+  , encodeMsg: encode codecMsg
+  , debugMsg: defaultDebugMsg
   }
 
 codecPubState :: JsonCodec PubState
