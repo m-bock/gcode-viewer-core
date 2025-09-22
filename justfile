@@ -33,8 +33,8 @@ link-release:
 
 patch-package-json:
     node scripts/generate-exports.mjs
-    git add package.json
-    git commit -m "update package.json exports"
+    #git add package.json
+    #git commit -m "update package.json exports"
     
 generate-doc-page:
     node scripts/mk-index-pages.mjs
