@@ -41,6 +41,11 @@ publish:
     git push
     npx gh-pages -d docs --add
 
+set-minor-version:
+    npm version minor
+
 run-publish: check-git-clean clean gen-types gen-foreign-types check-exports patch-package-json gen-type-docs pack-release link-release generate-doc-page publish
+
+run-publish-minor: set-minor-version run-publish
 
 run-dev: gen-types gen-foreign-types check-exports patch-package-json

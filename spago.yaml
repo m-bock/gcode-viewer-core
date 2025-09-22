@@ -35,7 +35,6 @@ workspace:
         - foreign-object
 
     stadium:
+      # path: ../purescript-stadium
       git: https://github.com/m-bock/purescript-stadium
       ref: 49eeb1eef4dd1a870a9adb4e942f7323bcb9257d
-    # stadium:
-    #   path: ../purescript-stadium

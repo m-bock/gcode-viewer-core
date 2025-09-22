@@ -20,7 +20,7 @@ import Data.Codec (encode)
 import Data.Codec.Argonaut (JsonCodec)
 import Data.Codec.Argonaut as CA
 import Data.Codec.Argonaut.Sum as CAR
-import Data.Lens (set)
+import Data.Lens (over, set)
 import Data.Lens.Iso.Newtype (unto)
 import Data.String as Str
 import Data.Symbol (reflectSymbol)
@@ -97,6 +97,7 @@ updatePubState msg pubState = case msg of
 
   MsgSetMaxLayer maxLayer -> pubState
     # set (unto Named <<< prop @"maxLayer") maxLayer
+    # over (unto Named <<< prop @"endLayer") (min maxLayer)
     # pure
 
 codecMsg :: JsonCodec Msg
