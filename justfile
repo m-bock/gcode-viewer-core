@@ -33,6 +33,8 @@ link-release:
 
 patch-package-json:
     node scripts/generate-exports.mjs
+    git add package.json
+    git commit -m "update package.json exports"
     
 generate-doc-page:
     node scripts/mk-index-pages.mjs
@@ -48,9 +50,5 @@ set-patch-version:
     npm version patch
 
 run-publish: check-git-clean clean gen-types gen-foreign-types check-exports patch-package-json gen-type-docs pack-release link-release generate-doc-page publish
-
-run-publish-minor: set-minor-version run-publish
-
-run-publish-patch: set-patch-version run-publish
 
 run-dev: gen-types gen-foreign-types check-exports patch-package-json
