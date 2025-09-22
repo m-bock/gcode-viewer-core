@@ -35,7 +35,6 @@ patch-package-json:
     node scripts/generate-exports.mjs
     git add package.json
     git commit -m "update package.json exports"
-    git push
     
 generate-doc-page:
     node scripts/mk-index-pages.mjs
